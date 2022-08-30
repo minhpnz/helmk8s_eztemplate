@@ -1,0 +1,70 @@
+{{ define "libchart.deployment" }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "libchart.fullname" . }} 
+  namespace: {{ default .Chart.Name }} 
+spec:  
+  selector:
+    matchLabels:
+      app: {{ include "libchart.serviceAccountName" . }}
+{{- with .Values.deployment.autoscaling }}
+  {{- if not .enabled }}
+  replicas: {{ .replicaCount }}
+  {{- end }}
+{{- end }}
+  template:
+    metadata:
+      {{- with .Values.deployment.podAnnotations }}
+      annotations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      labels:
+        app: {{ include "libchart.serviceAccountName" . }}
+    spec:
+      {{- with .Values.deployment.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      containers:
+        - name: {{ include "libchart.serviceAccountName" . }}
+          image: {{ .Values.deployment.image.repository }}:{{ .Values.deployment.image.tag | default .Chart.AppVersion }}
+          imagePullPolicy: {{ .Values.deployment.image.pullPolicy }}
+        {{- with .Values.deployment.env }}
+          env:
+        {{- range .}}
+          - name: {{ .name }}
+            value: {{ .value }}
+        {{- end }}
+        {{- end }}
+        {{- with .Values.deployment.command }}
+          command: {{ . }}
+        {{- end }}
+        {{- with .Values.service }}
+          ports:
+        {{- range .}}
+          - containerPort: {{ .port}}
+        {{- end }}
+        {{- end }}     
+        {{- with .Values.deployment.resources  }}   
+          resources:
+            {{- toYaml . | nindent 12 }}
+        {{- end }}
+        {{- with .Values.deployment.volumeMounts }}
+          volumeMounts:
+          {{- range. }}
+          - name: {{ .name }}
+            mountPath: {{ .mountPath }}
+            subPath: {{ .subPath }}
+          {{- end }}
+        {{- end}}
+    {{- with .Values.deployment.volumes }}
+      volumes:
+          - name: {{ .name }}
+            persistentVolumeClaim:
+              claimName: {{ .persistentVolumeClaim.claimName }}
+    {{- end }}
+    {{- with .Values.deployment.restartPolicy }}
+      restartPolicy: {{ . }}
+    {{- end }}
+{{- end }}

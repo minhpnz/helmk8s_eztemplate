@@ -1,0 +1,9 @@
+{{- include "libchart.deployment" . }}
+---
+{{- if .Values.service }}
+  {{- include "libchart.service" . }}
+{{- end }}
+---
+{{- if .Values.ingress }}
+  {{- include "libchart.ingress" . }}
+{{- end }}

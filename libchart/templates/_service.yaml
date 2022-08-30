@@ -1,0 +1,20 @@
+{{ define "libchart.service" }}
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "libchart.fullname" . }}-svc
+  namespace: {{ .Chart.Name }}
+  labels:
+    {{- include "libchart.labels" . | nindent 4 }}
+spec:
+  type: ClusterIP
+  ports:
+  {{- range .Values.service }}
+    - port: {{ .port }}
+      targetPort: {{ .targetPort | default .port }}
+      protocol: {{ .protocol | default "TCP" }}
+      name: {{ .port }}{{ .protocol | default "tcp" }}
+  {{- end }}
+  selector:
+    {{- include "libchart.selectorLabels" . | nindent 4 }}
+{{- end }}
